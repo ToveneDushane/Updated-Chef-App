@@ -1,331 +1,262 @@
-// App.js
-import React, { useState, useMemo } from "react";
-import {
-  SafeAreaView,
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  FlatList,
-  Alert,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
-import { Picker } from "@react-native-picker/picker";
+import React, { useState } from 'react';
+import { View, Text, TextInput, FlatList, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import { Picker } from '@react-native-picker/picker';
+
+const Stack = createStackNavigator();
+
+// Default Menu Items (Drinks added)
+const initialMenuItems = [
+  { id: '1', dishName: 'Bruschetta', description: 'Grilled bread with tomato and basil', course: 'Starters', price: '45' },
+  { id: '2', dishName: 'Caesar Salad', description: 'Classic Caesar with anchovy dressing', course: 'Starters', price: '55' },
+  { id: '3', dishName: 'Grilled Steak', description: 'Served with garlic butter and fries', course: 'Mains', price: '150' },
+  { id: '4', dishName: 'Pasta Alfredo', description: 'Creamy pasta with parmesan', course: 'Mains', price: '120' },
+  { id: '5', dishName: 'Chocolate Cake', description: 'Rich dark chocolate dessert', course: 'Dessert', price: '65' },
+  { id: '6', dishName: 'Tiramisu', description: 'Coffee-flavored Italian dessert', course: 'Dessert', price: '75' },
+  { id: '7', dishName: 'Iced Coffee', description: 'Chilled espresso with milk and ice', course: 'Drinks', price: '40' },
+  { id: '8', dishName: 'Fresh Lemonade', description: 'Refreshing homemade lemon drink', course: 'Drinks', price: '35' },
+];
+
+// Function to calculate the average price of menu items by course
+const calculateAveragePrice = (menuItems, course) => {
+  const itemsByCourse = menuItems.filter(item => item.course === course);
+  const total = itemsByCourse.reduce((sum, item) => sum + parseFloat(item.price), 0);
+  return itemsByCourse.length ? (total / itemsByCourse.length).toFixed(2) : 0;
+};
+
+// Custom Button Component
+const CustomButton = ({ title, onPress }) => (
+  <TouchableOpacity style={styles.button} onPress={onPress}>
+    <Text style={styles.buttonText}>{title}</Text>
+  </TouchableOpacity>
+);
+
+// Home Screen
+function HomeScreen({ navigation, route }) {
+  const menuItems = route.params?.menuItems || initialMenuItems;
+
+  return (
+    <View style={styles.container}>
+      <Image
+        source={{ uri: 'https://img.freepik.com/premium-vector/spoon-fork-cartoon-vector-illustration_290315-7544.jpg' }}
+        style={styles.logo}
+      />
+      <Text style={styles.header}>Chef for show by Christoffe</Text>
+      <Text>Total Menu Items: {menuItems.length}</Text>
+
+      {/* Average prices for each course */}
+      <Text>Average Price for Starters: R{calculateAveragePrice(menuItems, 'Starters')}</Text>
+      <Text>Average Price for Mains: R{calculateAveragePrice(menuItems, 'Mains')}</Text>
+      <Text>Average Price for Dessert: R{calculateAveragePrice(menuItems, 'Dessert')}</Text>
+      <Text>Average Price for Drinks: R{calculateAveragePrice(menuItems, 'Drinks')}</Text>
+
+      {/* Menu list */}
+      <FlatList
+        data={menuItems}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.menuItem}>
+            <Text style={styles.menuText}>{item.dishName} - {item.course} - R{item.price}</Text>
+            <Text>{item.description}</Text>
+          </View>
+        )}
+      />
+
+      <CustomButton title="Add/Remove Menu Items" onPress={() => navigation.navigate('ManageMenu', { menuItems })} />
+      <CustomButton title="Filter Menu by Course" onPress={() => navigation.navigate('FilterMenu', { menuItems })} />
+    </View>
+  );
+}
+
+// Manage Menu Screen
+function ManageMenuScreen({ navigation, route }) {
+  const [dishName, setDishName] = useState('');
+  const [description, setDescription] = useState('');
+  const [course, setCourse] = useState('Starters');
+  const [price, setPrice] = useState('');
+  const [menuItems, setMenuItems] = useState(route.params?.menuItems || initialMenuItems);
+
+  const courses = ['Starters', 'Mains', 'Dessert', 'Drinks'];
+
+  const addMenuItem = () => {
+    if (dishName && description && price) {
+      const newItem = {
+        id: Math.random().toString(),
+        dishName,
+        description,
+        course,
+        price,
+      };
+      setMenuItems([...menuItems, newItem]);
+      setDishName('');
+      setDescription('');
+      setPrice('');
+    } else {
+      alert('Please fill all fields.');
+    }
+  };
+
+  const removeMenuItem = (id) => {
+    const updatedMenuItems = menuItems.filter(item => item.id !== id);
+    setMenuItems(updatedMenuItems);
+  };
+
+  return (
+    <View style={styles.container}>
+      <Image
+        source={{ uri: 'https://cdn0.iconfinder.com/data/icons/food-6-7/128/299-512.png' }}
+        style={styles.logo}
+      />
+      <Text style={styles.header}>Add Menu Items</Text>
+
+      <TextInput style={styles.input} placeholder="Dish Name" value={dishName} onChangeText={setDishName} />
+      <TextInput style={styles.input} placeholder="Description" value={description} onChangeText={setDescription} />
+      <Text style={styles.label}>Select Course</Text>
+      <Picker selectedValue={course} style={styles.picker} onValueChange={setCourse}>
+        {courses.map(item => <Picker.Item key={item} label={item} value={item} />)}
+      </Picker>
+      <TextInput
+        style={styles.input}
+        placeholder="Price (in ZAR)"
+        value={price}
+        onChangeText={setPrice}
+        keyboardType="numeric"
+      />
+
+      <CustomButton title="Add Menu Item" onPress={addMenuItem} />
+
+      <FlatList
+        data={menuItems}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.menuItem}>
+            <Text>{item.dishName} - {item.course} - R{item.price}</Text>
+            <Text>{item.description}</Text>
+            <TouchableOpacity onPress={() => removeMenuItem(item.id)}>
+              <Text style={styles.removeButton}>Remove</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      />
+
+      <CustomButton title="Go Back" onPress={() => navigation.navigate('Home', { menuItems })} />
+    </View>
+  );
+}
+
+// Filter Menu Screen
+function FilterMenuScreen({ route }) {
+  const menuItems = route.params?.menuItems || initialMenuItems;
+  const [selectedCourse, setSelectedCourse] = useState('Starters');
+
+  const filteredItems = menuItems.filter(item => item.course === selectedCourse);
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.header}>Filter Menu by Course</Text>
+
+      <Picker selectedValue={selectedCourse} style={styles.picker} onValueChange={setSelectedCourse}>
+        <Picker.Item label="Starters" value="Starters" />
+        <Picker.Item label="Mains" value="Mains" />
+        <Picker.Item label="Dessert" value="Dessert" />
+        <Picker.Item label="Drinks" value="Drinks" />
+      </Picker>
+
+      <FlatList
+        data={filteredItems}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.menuItem}>
+            <Text>{item.dishName} - R{item.price}</Text>
+            <Text>{item.description}</Text>
+          </View>
+        )}
+      />
+    </View>
+  );
+}
+
+// App
+export default function App() {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator initialRouteName="Home">
+        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="ManageMenu" component={ManageMenuScreen} />
+        <Stack.Screen name="FilterMenu" component={FilterMenuScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#8B5E3C",
     padding: 20,
+    backgroundColor: '#F6C27A',
   },
-  menuTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "white",
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  navRow: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    backgroundColor: "#FFD700",
-    borderRadius: 50,
-    paddingVertical: 10,
+  logo: {
+    width: 300,
+    height: 200,
+    alignSelf: 'center',
     marginBottom: 20,
   },
-  navText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "green",
+  header: {
+    fontSize: 30,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+    color: '#333',
   },
-  selectedNav: {
-    textDecorationLine: "underline",
-    color: "#006400",
-  },
-  menuItem: {
-    backgroundColor: "#FFD700",
-    borderRadius: 20,
-    padding: 15,
-    marginBottom: 15,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  menuText: {
-    fontWeight: "bold",
-    color: "black",
-    flexShrink: 1,
-  },
-  priceTag: {
-    backgroundColor: "green",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  priceText: {
-    color: "white",
-    fontWeight: "bold",
+  label: {
+    fontSize: 25,
+    marginTop: 10,
+    color: '#666',
   },
   input: {
-    backgroundColor: "#FFD700",
-    padding: 12,
-    borderRadius: 20,
-    marginBottom: 15,
-    textAlign: "center",
-    fontSize: 16,
+    height: 40,
+    borderColor: 'gray',
+    borderWidth: 1,
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+    backgroundColor: '#FFF',
   },
-  pickerContainer: {
-    backgroundColor: "#FFD700",
-    borderRadius: 20,
-    marginBottom: 15,
+  picker: {
+    height: 50,
+    width: '100%',
+    marginBottom: 10,
+  },
+  menuItem: {
+    padding: 10,
+    marginVertical: 5,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    backgroundColor: '#FFF',
+  },
+  menuText: {
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  removeButton: {
+    color: 'red',
+    marginTop: 5,
   },
   button: {
-    backgroundColor: "green",
-    padding: 14,
-    borderRadius: 20,
-    marginBottom: 10,
+    backgroundColor: '#000',
+    padding: 10,
+    borderRadius: 100,
+    alignItems: 'center',
+    marginVertical: 5,
   },
   buttonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  avgBox: {
-    backgroundColor: "rgba(255,255,255,0.1)",
-    padding: 10,
-    borderRadius: 10,
-    marginBottom: 10,
-  },
-  avgText: {
-    color: "white",
-    fontSize: 15,
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
 
-export default function App() {
-  const [screen, setScreen] = useState("Home");
-  const [items, setItems] = useState([
-    { id: "1", name: "Tomato Soup", course: "Starters", price: 25 },
-    { id: "2", name: "Grilled Chicken", course: "Mains", price: 85 },
-    { id: "3", name: "Chocolate Cake", course: "Dessert", price: 40 },
-  ]);
-
-  const [name, setName] = useState("");
-  const [course, setCourse] = useState("Starters");
-  const [price, setPrice] = useState("");
-  const [filterCourse, setFilterCourse] = useState("All");
-
-  const averages = useMemo(() => {
-    const groups = {};
-    for (const it of items) {
-      if (!groups[it.course]) groups[it.course] = { sum: 0, count: 0 };
-      groups[it.course].sum += Number(it.price);
-      groups[it.course].count += 1;
-    }
-    const result = {};
-    for (const c of Object.keys(groups)) {
-      result[c] = groups[c].sum / groups[c].count;
-    }
-    return result;
-  }, [items]);
-
-  const addItem = () => {
-    if (!name.trim() || !price.trim()) {
-      Alert.alert("Missing info", "Please fill in all fields.");
-      return;
-    }
-    const num = Number(price);
-    if (isNaN(num) || num <= 0) {
-      Alert.alert("Invalid price", "Enter a valid number greater than 0.");
-      return;
-    }
-    const newItem = {
-      id: Date.now().toString(),
-      name: name.trim(),
-      course,
-      price: num,
-    };
-    setItems((prev) => [newItem, ...prev]);
-    setName("");
-    setPrice("");
-    Alert.alert("Success", `${name} added to ${course}`);
-    setScreen("Home");
-  };
-
-  const removeItem = (id) => {
-    const item = items.find((i) => i.id === id);
-    Alert.alert(
-      "Remove item?",
-      `Delete "${item.name}" from the menu?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Remove",
-          style: "destructive",
-          onPress: () =>
-            setItems((prev) => prev.filter((it) => it.id !== id)),
-        },
-      ]
-    );
-  };
-
-  const displayedItems =
-    filterCourse === "All"
-      ? items
-      : items.filter((it) => it.course === filterCourse);
-
-  return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{ flex: 1 }}
-      >
-        <View style={styles.navRow}>
-          {["Home", "Add", "Filter"].map((s) => (
-            <TouchableOpacity key={s} onPress={() => setScreen(s)}>
-              <Text
-                style={[
-                  styles.navText,
-                  screen === s && styles.selectedNav,
-                ]}
-              >
-                {s}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {screen === "Home" && (
-          <View style={{ flex: 1 }}>
-            <Text style={styles.menuTitle}>Menu Overview</Text>
-
-            <View style={styles.avgBox}>
-              <Text style={styles.avgText}>⭐ Average Prices by Course:</Text>
-              {["Starters", "Mains", "Dessert"].map((c) => (
-                <Text key={c} style={styles.avgText}>
-                  {c}: {averages[c] ? `R ${averages[c].toFixed(2)}` : "No items"}
-                </Text>
-              ))}
-            </View>
-
-            <FlatList
-              data={displayedItems}
-              keyExtractor={(i) => i.id}
-              ListEmptyComponent={
-                <Text
-                  style={{
-                    color: "white",
-                    textAlign: "center",
-                    marginTop: 20,
-                  }}
-                >
-                  No menu items yet. Tap "Add" to begin.
-                </Text>
-              }
-              renderItem={({ item }) => (
-                <View style={styles.menuItem}>
-                  <Text style={styles.menuText}>
-                    {item.name} ({item.course})
-                  </Text>
-                  <TouchableOpacity
-                    style={styles.priceTag}
-                    onPress={() => removeItem(item.id)}
-                  >
-                    <Text style={styles.priceText}>R {item.price}</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            />
-          </View>
-        )}
-
-        {screen === "Add" && (
-          <View style={{ flex: 1 }}>
-            <Text style={styles.menuTitle}>Add New Item</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Item name"
-              value={name}
-              onChangeText={setName}
-              placeholderTextColor="#333"
-            />
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={course}
-                onValueChange={setCourse}
-                style={{ width: "100%" }}
-              >
-                <Picker.Item label="Starters" value="Starters" />
-                <Picker.Item label="Mains" value="Mains" />
-                <Picker.Item label="Dessert" value="Dessert" />
-              </Picker>
-            </View>
-            <TextInput
-              style={styles.input}
-              placeholder="Price (e.g. 35)"
-              value={price}
-              onChangeText={setPrice}
-              keyboardType="numeric"
-              placeholderTextColor="#333"
-            />
-            <TouchableOpacity style={styles.button} onPress={addItem}>
-              <Text style={styles.buttonText}>Add Item</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {screen === "Filter" && (
-          <View style={{ flex: 1 }}>
-            <Text style={styles.menuTitle}>Filter by Course</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={filterCourse}
-                onValueChange={setFilterCourse}
-                style={{ width: "100%" }}
-              >
-                <Picker.Item label="All" value="All" />
-                <Picker.Item label="Starters" value="Starters" />
-                <Picker.Item label="Mains" value="Mains" />
-                <Picker.Item label="Dessert" value="Dessert" />
-              </Picker>
-            </View>
-
-            <Text
-              style={{
-                color: "white",
-                textAlign: "center",
-                marginBottom: 10,
-                fontWeight: "bold",
-              }}
-            >
-              Showing {displayedItems.length} items
-            </Text>
-
-            <FlatList
-              data={displayedItems}
-              keyExtractor={(i) => i.id}
-              renderItem={({ item }) => (
-                <View style={styles.menuItem}>
-                  <Text style={styles.menuText}>
-                    {item.name} ({item.course})
-                  </Text>
-                  <TouchableOpacity
-                    style={styles.priceTag}
-                    onPress={() => removeItem(item.id)}
-                  >
-                    <Text style={styles.priceText}>Remove</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            />
-          </View>
-        )}
-      </KeyboardAvoidingView>
-    </SafeAreaView>
-  );
-}
 
 
