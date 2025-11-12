@@ -1,4 +1,4 @@
-Change Log — “Restaurant Menu App” (Updated Version with Drinks)
+Change Log — “Restaurant Menu App” (Updated Version)
 1. Added a new category: “Drinks”
 
 Before: The menu only had three courses — Starters, Mains, and Dessert
